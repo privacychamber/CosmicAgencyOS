@@ -1,0 +1,479 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------
+// User & RBAC
+// -----------------------------------------
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  roleId        String?
+  role          Role?     @relation(fields: [roleId], references: [id])
+  preferences   Json?     // Notification preferences (e.g., { emailEnabled: true })
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts            Account[]
+  sessions            Session[]
+  leadAssignments     LeadAssignment[]
+  ownedProjects       Project[]                 @relation("ProjectOwner")
+  assignedProjects    Project[]                 @relation("ProjectAssignedBda")
+  projectTakeovers    ProjectOwnershipHistory[] @relation("OwnershipHistoryNew")
+  projectMemberships  ProjectMember[]
+  tasks               Task[]                    @relation("TaskAssignee")
+  createdTasks        Task[]                    @relation("TaskCreator")
+  activities          Activity[]
+  meetings            Meeting[]                 @relation("MeetingParticipants")
+  organizedMeetings   Meeting[]                 @relation("MeetingOrganizer")
+  followUps           FollowUp[]
+  auditLogs           AuditLog[]
+  taskComments        TaskComment[]
+  addedPayments       Payment[]                 @relation("PaymentAddedBy")
+}
+
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique // e.g. "Super Admin", "Admin", "Project Manager"
+  description String?
+  users       User[]
+  permissions Permission[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  action      String   @unique // e.g. "lead.create", "project.view"
+  description String?
+  roles       Role[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// -----------------------------------------
+// CRM & Sales
+// -----------------------------------------
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  website     String?
+  industry    String?
+  contacts    Contact[]
+  leads       Lead[]
+  clients     Client[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Contact {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Lead {
+  id            String   @id @default(cuid())
+  linkedinUrl   String   @unique
+  firstName     String?
+  lastName      String?
+  photo         String?
+  country       String?
+  location      String?
+  position      String?
+  companyId     String?
+  company       Company? @relation(fields: [companyId], references: [id])
+  industry      String?
+  service       String?  // Web Design, Web Development, Shopify, WordPress, UI/UX, SEO, E-commerce, Mobile App, Custom Software, Other
+  source        String?  // LinkedIn, WhatsApp, Upwork, Instagram, Facebook, Referral, Website, Other
+  status        String   @default("New") // New, Contacted, Connected, Replied, Interested, Meeting, Proposal Sent, Won, Lost
+  priority      String?  // Hot, Warm, Cold
+  lastContacted DateTime?
+  nextFollowUp  DateTime?
+  deletedAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  assignments LeadAssignment[]
+  tags        Tag[]
+  notes       Note[]
+  attachments LeadAttachment[]
+  activities  Activity[]
+  opportunities Opportunity[]
+  meetings    Meeting[]
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String?
+  leads     Lead[]
+  createdAt DateTime @default(now())
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LeadAttachment {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Opportunity {
+  id          String   @id @default(cuid())
+  name        String
+  value       Float?
+  stage       String   @default("Discovery") // Discovery, Proposal, Negotiation, Closed Won, Closed Lost
+  expectedCloseDate DateTime?
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  meetings    Meeting[]
+  activities  Activity[]
+}
+
+model LeadAssignment {
+  id          String   @id @default(cuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  assignedAt  DateTime @default(now())
+}
+
+model Client {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  status      String   // e.g. "Active", "Inactive"
+  
+  // Dashboard Metrics (Cached or directly stored)
+  totalProjectValue Float @default(0)
+  totalReceived     Float @default(0)
+  totalOutstanding  Float @default(0)
+
+  projects    Project[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// -----------------------------------------
+// Project Management
+// -----------------------------------------
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id])
+  
+  source      String?
+  startDate   DateTime?
+  deadline    DateTime?
+  finalBudget Float?
+  received    Float?
+  pending     Float?
+  bonus       Float?
+  serviceType String?
+  notes       String?  @db.Text
+  
+  ownerId     String
+  owner       User     @relation("ProjectOwner", fields: [ownerId], references: [id])
+  assignedBdaId String?
+  assignedBda   User?  @relation("ProjectAssignedBda", fields: [assignedBdaId], references: [id])
+  
+  status      String   // "Not Started", "Work in Progress", "On Hold", "Review", "Issue", "Completed", "Cancelled"
+  health      String?  // "On Track", "At Risk", "Off Track"
+  priority    String?  // "High", "Medium", "Low"
+  progress    Int      @default(0)
+  
+  completedAt DateTime?
+  holdReason  String?
+  issueDescription String?
+  expectedResumeDate DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members           ProjectMember[]
+  ownershipHistory  ProjectOwnershipHistory[]
+  tasks             Task[]
+  milestones        Milestone[]
+  documents         Document[]
+  payments          Payment[]
+}
+
+model ProjectOwnershipHistory {
+  id              String   @id @default(cuid())
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  previousOwnerId String?
+  newOwnerId      String
+  newOwner        User     @relation("OwnershipHistoryNew", fields: [newOwnerId], references: [id])
+  reason          String?
+  assignedAt      DateTime @default(now())
+}
+
+model ProjectMember {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  role        String   // e.g. "Developer", "Designer"
+  joinedAt    DateTime @default(now())
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  assigneeId  String?
+  assignee    User?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creatorId   String
+  creator     User     @relation("TaskCreator", fields: [creatorId], references: [id])
+  status      String   // "Backlog", "To Do", "In Progress", "Review", "Blocked", "Done"
+  priority    String?
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parentTaskId String?
+  parentTask   Task?            @relation("Subtasks", fields: [parentTaskId], references: [id])
+  subtasks     Task[]           @relation("Subtasks")
+  milestoneId  String?
+  milestone    Milestone?       @relation(fields: [milestoneId], references: [id])
+  comments     TaskComment[]
+  attachments  TaskAttachment[]
+  activities   Activity[]
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TaskAttachment {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Milestone {
+  id          String   @id @default(cuid())
+  name        String
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  dueDate     DateTime?
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tasks       Task[]
+}
+
+// -----------------------------------------
+// Activities & Communications
+// -----------------------------------------
+model Activity {
+  id          String   @id @default(cuid())
+  type        String   // Meeting, Call, Follow-up, WhatsApp, Email, LinkedIn, Note, Other
+  content     String   @db.Text
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  leadId      String?
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+  opportunityId String?
+  opportunity Opportunity? @relation(fields: [opportunityId], references: [id])
+  taskId      String?
+  task        Task?    @relation(fields: [taskId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Meeting {
+  id          String   @id @default(cuid())
+  title       String
+  startTime   DateTime
+  endTime     DateTime
+  status      String   @default("Upcoming") // Upcoming, Completed, Cancelled, Rescheduled
+  organizerId String
+  organizer   User     @relation("MeetingOrganizer", fields: [organizerId], references: [id])
+  participants User[]  @relation("MeetingParticipants")
+  
+  leadId      String?
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+  opportunityId String?
+  opportunity Opportunity? @relation(fields: [opportunityId], references: [id])
+  
+  reminders   EmailReminder[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EmailReminder {
+  id          String   @id @default(cuid())
+  type        String   // 1_day, 1_hour, 10_min
+  triggerTime DateTime
+  status      String   @default("Pending") // Pending, Sent, Cancelled
+  meetingId   String
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FollowUp {
+  id          String   @id @default(cuid())
+  reason      String
+  dueDate     DateTime
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// -----------------------------------------
+// Financials & Documents
+// -----------------------------------------
+model Payment {
+  id          String   @id @default(cuid())
+  amount      Float
+  currency    String   @default("USD")
+  status      String   // "Pending", "Paid", "Overdue"
+  dueDate     DateTime?
+  paidAt      DateTime?
+  notes       String?  @db.Text
+  addedById   String
+  addedBy     User     @relation("PaymentAddedBy", fields: [addedById], references: [id])
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// -----------------------------------------
+// System & Audit
+// -----------------------------------------
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // e.g. "project.status.update"
+  entityType  String   // e.g. "Project"
+  entityId    String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  changes     String?  @db.Text // JSON string of changes
+  createdAt   DateTime @default(now())
+}
+
+// -----------------------------------------
+// Automation Engine
+// -----------------------------------------
+model Automation {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  triggerEvent  String   // e.g. "project.status_changed", "payment.overdue"
+  conditions    Json?    // Optional JSON of conditions
+  actionType    String   // e.g. "send_email", "create_notification"
+  actionPayload Json     // Template or parameters for the action
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  runs          AutomationRun[]
+}
+
+model AutomationRun {
+  id            String   @id @default(cuid())
+  automationId  String
+  automation    Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  entityId      String   // ID of the project, lead, payment, etc.
+  idempotentKey String   @unique // To prevent duplicate executions
+  status        String   // "PENDING", "SUCCESS", "FAILED"
+  error         String?  @db.Text
+  retryCount    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

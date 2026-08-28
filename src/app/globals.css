@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0a0a0a;
+  --color-foreground: #f0f0f0;
+
+  --color-card: #121212;
+  --color-card-foreground: #f0f0f0;
+
+  --color-popover: #121212;
+  --color-popover-foreground: #f0f0f0;
+
+  --color-primary: #e5ff00; /* Electric / Acid Yellow */
+  --color-primary-foreground: #0a0a0a;
+
+  --color-secondary: #ff7700; /* Warm Orange */
+  --color-secondary-foreground: #ffffff;
+
+  --color-muted: #1f1f1f;
+  --color-muted-foreground: #8f8f8f;
+
+  --color-accent: #e5ff00;
+  --color-accent-foreground: #0a0a0a;
+
+  --color-destructive: #ff3333;
+  --color-destructive-foreground: #ffffff;
+
+  --color-border: #1f1f1f;
+  --color-input: #1f1f1f;
+  --color-ring: #e5ff00;
+
+  --radius-lg: 1.5rem; /* 24px */
+  --radius-md: 0.875rem; /* 14px */
+  --radius-sm: 0.625rem; /* 10px */
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-border, currentColor);
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+}
