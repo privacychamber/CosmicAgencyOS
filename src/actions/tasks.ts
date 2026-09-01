@@ -1,9 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 
 export async function getTasksByProject(projectId: string) {
+  const user = await requirePermission("task.view");
   try {
     const tasks = await prisma.task.findMany({
       where: { projectId, parentTaskId: null },
@@ -33,6 +35,7 @@ export async function createTask(data: {
   dueDate?: Date;
   parentTaskId?: string;
 }) {
+  const user = await requirePermission("task.create");
   try {
     const task = await prisma.task.create({
       data,
@@ -46,6 +49,7 @@ export async function createTask(data: {
 }
 
 export async function updateTaskStatus(taskId: string, newStatus: string, projectId: string) {
+  const user = await requirePermission("task.update");
   try {
     const task = await prisma.task.update({
       where: { id: taskId },

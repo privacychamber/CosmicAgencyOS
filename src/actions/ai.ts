@@ -4,12 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { hasPermission } from "@/lib/rbac";
 import { format } from "date-fns";
 
-// Mock retrieving the current user context
+import { auth } from "@/auth";
+
+// Retrieve the current user context
 async function getCurrentUser() {
-  // In a real app: const session = await getServerSession(authOptions); return session.user;
-  // For this demo, we assume the first admin user
-  return await prisma.user.findFirst({ where: { role: { name: "Super Admin" } } }) || 
-         await prisma.user.findFirst();
+  const session = await auth();
+  return session?.user;
 }
 
 /**

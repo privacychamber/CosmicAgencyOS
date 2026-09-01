@@ -43,6 +43,7 @@ export async function createPayment(data: {
 }
 
 export async function recalculateProjectFinancials(projectId: string) {
+  const user = await requirePermission("project.financial.manage");
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     include: { payments: true }

@@ -105,6 +105,7 @@ export async function takeOverProject(id: string, reason?: string) {
 }
 
 export async function getProjectById(id: string) {
+  const user = await requirePermission("project.view");
   try {
     const project = await prisma.project.findUnique({
       where: { id },
