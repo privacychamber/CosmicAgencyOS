@@ -19,26 +19,30 @@ model User {
   image         String?
   roleId        String?
   role          Role?     @relation(fields: [roleId], references: [id])
-  preferences   Json?     // Notification preferences (e.g., { emailEnabled: true })
+  preferences   Json? // Notification preferences (e.g., { emailEnabled: true })
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts            Account[]
-  sessions            Session[]
-  leadAssignments     LeadAssignment[]
-  ownedProjects       Project[]                 @relation("ProjectOwner")
-  assignedProjects    Project[]                 @relation("ProjectAssignedBda")
-  projectTakeovers    ProjectOwnershipHistory[] @relation("OwnershipHistoryNew")
-  projectMemberships  ProjectMember[]
-  tasks               Task[]                    @relation("TaskAssignee")
-  createdTasks        Task[]                    @relation("TaskCreator")
-  activities          Activity[]
-  meetings            Meeting[]                 @relation("MeetingParticipants")
-  organizedMeetings   Meeting[]                 @relation("MeetingOrganizer")
-  followUps           FollowUp[]
-  auditLogs           AuditLog[]
-  taskComments        TaskComment[]
-  addedPayments       Payment[]                 @relation("PaymentAddedBy")
+  accounts           Account[]
+  sessions           Session[]
+  leadAssignments    LeadAssignment[]
+  ownedProjects      Project[]                 @relation("ProjectOwner")
+  assignedProjects   Project[]                 @relation("ProjectAssignedBda")
+  projectTakeovers   ProjectOwnershipHistory[] @relation("OwnershipHistoryNew")
+  projectMemberships ProjectMember[]
+  tasks              Task[]                    @relation("TaskAssignee")
+  createdTasks       Task[]                    @relation("TaskCreator")
+  activities         Activity[]
+  meetings           Meeting[]                 @relation("MeetingParticipants")
+  organizedMeetings  Meeting[]                 @relation("MeetingOrganizer")
+  followUps          FollowUp[]
+  auditLogs          AuditLog[]
+  taskComments       TaskComment[]
+  addedPayments      Payment[]                 @relation("PaymentAddedBy")
+
+  attendanceSessions AttendanceSession[]
+  notifications      Notification[]
+  projectMessages    ProjectMessage[]
 }
 
 model Role {
@@ -61,18 +65,18 @@ model Permission {
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -99,32 +103,32 @@ model VerificationToken {
 // CRM & Sales
 // -----------------------------------------
 model Company {
-  id          String   @id @default(cuid())
-  name        String
-  website     String?
-  industry    String?
-  contacts    Contact[]
-  leads       Lead[]
-  clients     Client[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String    @id @default(cuid())
+  name      String
+  website   String?
+  industry  String?
+  contacts  Contact[]
+  leads     Lead[]
+  clients   Client[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Contact {
-  id          String   @id @default(cuid())
-  firstName   String
-  lastName    String
-  email       String
-  phone       String?
-  companyId   String?
-  company     Company? @relation(fields: [companyId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Lead {
-  id            String   @id @default(cuid())
-  linkedinUrl   String   @unique
+  id            String    @id @default(cuid())
+  linkedinUrl   String    @unique
   firstName     String?
   lastName      String?
   photo         String?
@@ -132,25 +136,25 @@ model Lead {
   location      String?
   position      String?
   companyId     String?
-  company       Company? @relation(fields: [companyId], references: [id])
+  company       Company?  @relation(fields: [companyId], references: [id])
   industry      String?
-  service       String?  // Web Design, Web Development, Shopify, WordPress, UI/UX, SEO, E-commerce, Mobile App, Custom Software, Other
-  source        String?  // LinkedIn, WhatsApp, Upwork, Instagram, Facebook, Referral, Website, Other
-  status        String   @default("New") // New, Contacted, Connected, Replied, Interested, Meeting, Proposal Sent, Won, Lost
-  priority      String?  // Hot, Warm, Cold
+  service       String? // Web Design, Web Development, Shopify, WordPress, UI/UX, SEO, E-commerce, Mobile App, Custom Software, Other
+  source        String? // LinkedIn, WhatsApp, Upwork, Instagram, Facebook, Referral, Website, Other
+  status        String    @default("New") // New, Contacted, Connected, Replied, Interested, Meeting, Proposal Sent, Won, Lost
+  priority      String? // Hot, Warm, Cold
   lastContacted DateTime?
   nextFollowUp  DateTime?
   deletedAt     DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  assignments LeadAssignment[]
-  tags        Tag[]
-  notes       Note[]
-  attachments LeadAttachment[]
-  activities  Activity[]
+  assignments   LeadAssignment[]
+  tags          Tag[]
+  notes         Note[]
+  attachments   LeadAttachment[]
+  activities    Activity[]
   opportunities Opportunity[]
-  meetings    Meeting[]
+  meetings      Meeting[]
 }
 
 model Tag {
@@ -181,54 +185,54 @@ model LeadAttachment {
 }
 
 model Opportunity {
-  id          String   @id @default(cuid())
-  name        String
-  value       Float?
-  stage       String   @default("Discovery") // Discovery, Proposal, Negotiation, Closed Won, Closed Lost
+  id                String    @id @default(cuid())
+  name              String
+  value             Float?
+  stage             String    @default("Discovery") // Discovery, Proposal, Negotiation, Closed Won, Closed Lost
   expectedCloseDate DateTime?
-  leadId      String
-  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  leadId            String
+  lead              Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  meetings    Meeting[]
-  activities  Activity[]
+  meetings   Meeting[]
+  activities Activity[]
 }
 
 model LeadAssignment {
-  id          String   @id @default(cuid())
-  leadId      String
-  lead        Lead     @relation(fields: [leadId], references: [id])
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  assignedAt  DateTime @default(now())
+  id         String   @id @default(cuid())
+  leadId     String
+  lead       Lead     @relation(fields: [leadId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  assignedAt DateTime @default(now())
 }
 
 model Client {
-  id          String   @id @default(cuid())
-  companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
-  status      String   // e.g. "Active", "Inactive"
-  
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+  status    String // e.g. "Active", "Inactive"
+
   // Dashboard Metrics (Cached or directly stored)
   totalProjectValue Float @default(0)
   totalReceived     Float @default(0)
   totalOutstanding  Float @default(0)
 
-  projects    Project[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  projects  Project[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 // -----------------------------------------
 // Project Management
 // -----------------------------------------
 model Project {
-  id          String   @id @default(cuid())
-  name        String
-  clientId    String
-  client      Client   @relation(fields: [clientId], references: [id])
-  
+  id       String @id @default(cuid())
+  name     String
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
+
   source      String?
   startDate   DateTime?
   deadline    DateTime?
@@ -236,33 +240,43 @@ model Project {
   received    Float?
   pending     Float?
   bonus       Float?
+
+  currency     String @default("USD")
+  exchangeRate Float  @default(1.0)
+  budgetInr    Float?
+  receivedInr  Float?
+  pendingInr   Float?
+  bonusInr     Float?
+
   serviceType String?
-  notes       String?  @db.Text
-  
-  ownerId     String
-  owner       User     @relation("ProjectOwner", fields: [ownerId], references: [id])
+  notes       String? @db.Text
+
+  ownerId       String
+  owner         User    @relation("ProjectOwner", fields: [ownerId], references: [id])
   assignedBdaId String?
-  assignedBda   User?  @relation("ProjectAssignedBda", fields: [assignedBdaId], references: [id])
-  
-  status      String   // "Not Started", "Work in Progress", "On Hold", "Review", "Issue", "Completed", "Cancelled"
-  health      String?  // "On Track", "At Risk", "Off Track"
-  priority    String?  // "High", "Medium", "Low"
-  progress    Int      @default(0)
-  
-  completedAt DateTime?
-  holdReason  String?
-  issueDescription String?
+  assignedBda   User?   @relation("ProjectAssignedBda", fields: [assignedBdaId], references: [id])
+
+  status   String // "Not Started", "Work in Progress", "On Hold", "Review", "Issue", "Completed", "Cancelled"
+  health   String? // "On Track", "At Risk", "Off Track"
+  priority String? // "High", "Medium", "Low"
+  progress Int     @default(0)
+
+  completedAt        DateTime?
+  holdReason         String?
+  issueDescription   String?
   expectedResumeDate DateTime?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  members           ProjectMember[]
-  ownershipHistory  ProjectOwnershipHistory[]
-  tasks             Task[]
-  milestones        Milestone[]
-  documents         Document[]
-  payments          Payment[]
+  members          ProjectMember[]
+  ownershipHistory ProjectOwnershipHistory[]
+  tasks            Task[]
+  milestones       Milestone[]
+  documents        Document[]
+  payments         Payment[]
+  invoices         Invoice[]
+  messages         ProjectMessage[]
 }
 
 model ProjectOwnershipHistory {
@@ -277,30 +291,30 @@ model ProjectOwnershipHistory {
 }
 
 model ProjectMember {
-  id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  role        String   // e.g. "Developer", "Designer"
-  joinedAt    DateTime @default(now())
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      String // e.g. "Developer", "Designer"
+  joinedAt  DateTime @default(now())
 }
 
 model Task {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   description String?
   projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
+  project     Project   @relation(fields: [projectId], references: [id])
   assigneeId  String?
-  assignee    User?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  assignee    User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
   creatorId   String
-  creator     User     @relation("TaskCreator", fields: [creatorId], references: [id])
-  status      String   // "Backlog", "To Do", "In Progress", "Review", "Blocked", "Done"
+  creator     User      @relation("TaskCreator", fields: [creatorId], references: [id])
+  status      String // "Backlog", "To Do", "In Progress", "Review", "Blocked", "Done"
   priority    String?
   dueDate     DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   parentTaskId String?
   parentTask   Task?            @relation("Subtasks", fields: [parentTaskId], references: [id])
@@ -333,59 +347,59 @@ model TaskAttachment {
 }
 
 model Milestone {
-  id          String   @id @default(cuid())
-  name        String
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
-  dueDate     DateTime?
-  completed   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String    @id @default(cuid())
+  name      String
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id])
+  dueDate   DateTime?
+  completed Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  tasks       Task[]
+  tasks Task[]
 }
 
 // -----------------------------------------
 // Activities & Communications
 // -----------------------------------------
 model Activity {
-  id          String   @id @default(cuid())
-  type        String   // Meeting, Call, Follow-up, WhatsApp, Email, LinkedIn, Note, Other
-  content     String   @db.Text
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  leadId      String?
-  lead        Lead?    @relation(fields: [leadId], references: [id])
+  id            String       @id @default(cuid())
+  type          String // Meeting, Call, Follow-up, WhatsApp, Email, LinkedIn, Note, Other
+  content       String       @db.Text
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  leadId        String?
+  lead          Lead?        @relation(fields: [leadId], references: [id])
   opportunityId String?
-  opportunity Opportunity? @relation(fields: [opportunityId], references: [id])
-  taskId      String?
-  task        Task?    @relation(fields: [taskId], references: [id])
-  createdAt   DateTime @default(now())
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
+  taskId        String?
+  task          Task?        @relation(fields: [taskId], references: [id])
+  createdAt     DateTime     @default(now())
 }
 
 model Meeting {
-  id          String   @id @default(cuid())
-  title       String
-  startTime   DateTime
-  endTime     DateTime
-  status      String   @default("Upcoming") // Upcoming, Completed, Cancelled, Rescheduled
-  organizerId String
-  organizer   User     @relation("MeetingOrganizer", fields: [organizerId], references: [id])
-  participants User[]  @relation("MeetingParticipants")
-  
-  leadId      String?
-  lead        Lead?    @relation(fields: [leadId], references: [id])
+  id           String   @id @default(cuid())
+  title        String
+  startTime    DateTime
+  endTime      DateTime
+  status       String   @default("Upcoming") // Upcoming, Completed, Cancelled, Rescheduled
+  organizerId  String
+  organizer    User     @relation("MeetingOrganizer", fields: [organizerId], references: [id])
+  participants User[]   @relation("MeetingParticipants")
+
+  leadId        String?
+  lead          Lead?        @relation(fields: [leadId], references: [id])
   opportunityId String?
-  opportunity Opportunity? @relation(fields: [opportunityId], references: [id])
-  
-  reminders   EmailReminder[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
+
+  reminders EmailReminder[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 }
 
 model EmailReminder {
   id          String   @id @default(cuid())
-  type        String   // 1_day, 1_hour, 10_min
+  type        String // 1_day, 1_hour, 10_min
   triggerTime DateTime
   status      String   @default("Pending") // Pending, Sent, Cancelled
   meetingId   String
@@ -395,57 +409,59 @@ model EmailReminder {
 }
 
 model FollowUp {
-  id          String   @id @default(cuid())
-  reason      String
-  dueDate     DateTime
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  completed   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  reason    String
+  dueDate   DateTime
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // -----------------------------------------
 // Financials & Documents
 // -----------------------------------------
 model Payment {
-  id          String   @id @default(cuid())
-  amount      Float
-  currency    String   @default("USD")
-  status      String   // "Pending", "Paid", "Overdue"
-  dueDate     DateTime?
-  paidAt      DateTime?
-  notes       String?  @db.Text
-  addedById   String
-  addedBy     User     @relation("PaymentAddedBy", fields: [addedById], references: [id])
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String    @id @default(cuid())
+  amount       Float
+  currency     String    @default("USD")
+  exchangeRate Float     @default(1.0)
+  amountInr    Float
+  status       String // "Pending", "Paid", "Overdue"
+  dueDate      DateTime?
+  paidAt       DateTime?
+  notes        String?   @db.Text
+  addedById    String
+  addedBy      User      @relation("PaymentAddedBy", fields: [addedById], references: [id])
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Document {
-  id          String   @id @default(cuid())
-  name        String
-  url         String
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // -----------------------------------------
 // System & Audit
 // -----------------------------------------
 model AuditLog {
-  id          String   @id @default(cuid())
-  action      String   // e.g. "project.status.update"
-  entityType  String   // e.g. "Project"
-  entityId    String
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  changes     String?  @db.Text // JSON string of changes
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  action     String // e.g. "project.status.update"
+  entityType String // e.g. "Project"
+  entityId   String
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  changes    String?  @db.Text // JSON string of changes
+  createdAt  DateTime @default(now())
 }
 
 // -----------------------------------------
@@ -455,26 +471,131 @@ model Automation {
   id            String   @id @default(cuid())
   name          String
   description   String?
-  triggerEvent  String   // e.g. "project.status_changed", "payment.overdue"
-  conditions    Json?    // Optional JSON of conditions
-  actionType    String   // e.g. "send_email", "create_notification"
-  actionPayload Json     // Template or parameters for the action
+  triggerEvent  String // e.g. "project.status_changed", "payment.overdue"
+  conditions    Json? // Optional JSON of conditions
+  actionType    String // e.g. "send_email", "create_notification"
+  actionPayload Json // Template or parameters for the action
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  runs          AutomationRun[]
+  runs AutomationRun[]
 }
 
 model AutomationRun {
-  id            String   @id @default(cuid())
+  id            String     @id @default(cuid())
   automationId  String
   automation    Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
-  entityId      String   // ID of the project, lead, payment, etc.
-  idempotentKey String   @unique // To prevent duplicate executions
-  status        String   // "PENDING", "SUCCESS", "FAILED"
-  error         String?  @db.Text
-  retryCount    Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  entityId      String // ID of the project, lead, payment, etc.
+  idempotentKey String     @unique // To prevent duplicate executions
+  status        String // "PENDING", "SUCCESS", "FAILED"
+  error         String?    @db.Text
+  retryCount    Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+// -----------------------------------------
+// Attendance
+// -----------------------------------------
+model AttendanceSession {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startTime       DateTime  @default(now())
+  endTime         DateTime?
+  location        String    @default("Office") // "Office" or "Home"
+  durationMinutes Int?
+  status          String    @default("Active") // "Active", "Completed"
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// -----------------------------------------
+// Notifications
+// -----------------------------------------
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String   @db.Text
+  type      String // "Task", "Project", "Invoice", "FollowUp", "System"
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// -----------------------------------------
+// Real-time Chat (Project Messages)
+// -----------------------------------------
+model ProjectMessage {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attachments MessageAttachment[]
+}
+
+model MessageAttachment {
+  id        String         @id @default(cuid())
+  name      String
+  url       String
+  messageId String
+  message   ProjectMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+}
+
+// -----------------------------------------
+// Invoicing (GST Supported)
+// -----------------------------------------
+model Invoice {
+  id            String  @id @default(cuid())
+  invoiceNumber String  @unique
+  clientId      String?
+  projectId     String
+  project       Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  issueDate DateTime
+  dueDate   DateTime
+  status    String   @default("Draft") // Draft, Issued, Paid, Partially Paid, Overdue, Cancelled
+
+  taxableAmount Float
+  cgst          Float @default(0)
+  sgst          Float @default(0)
+  igst          Float @default(0)
+  totalTax      Float @default(0)
+  grandTotal    Float
+
+  currency      String @default("INR")
+  exchangeRate  Float  @default(1.0)
+  grandTotalInr Float
+
+  clientBillingDetails  Json? // Snapshot of client address/GSTIN
+  companyBillingDetails Json? // Snapshot of company address/GSTIN/Bank
+  notes                 String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items InvoiceItem[]
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Float    @default(1)
+  rate        Float
+  sacCode     String?
+  amount      Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

@@ -4,8 +4,8 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  const password = await bcrypt.hash('password123', 10)
-
+  const isProd = process.env.NODE_ENV === 'production'
+  const devPassword = await bcrypt.hash('password123', 10)
   const roles = [
     { name: 'Super Admin', description: 'Full system access' },
     { name: 'Admin', description: 'System administration' },
@@ -74,18 +74,42 @@ async function main() {
       }
     })
 
-    // Create a test user for this role
-    const email = `${role.name.toLowerCase().replace(/ /g, '_')}@test.com`
-    await prisma.user.upsert({
-      where: { email },
-      update: { roleId: createdRole.id, password }, // Update password just in case
-      create: {
-        email,
-        name: `Test ${role.name}`,
-        password,
-        roleId: createdRole.id
+    // Handle user creation (Prod vs Dev)
+    if (isProd) {
+      if (role.name === 'Super Admin') {
+        const adminEmail = process.env.ADMIN_EMAIL;
+        const adminPass = process.env.ADMIN_PASSWORD;
+        if (!adminEmail || !adminPass) {
+          console.error("WARNING: ADMIN_EMAIL or ADMIN_PASSWORD not provided. Skipping admin creation in production.");
+          continue;
+        }
+        const hashedPassword = await bcrypt.hash(adminPass, 10);
+        await prisma.user.upsert({
+          where: { email: adminEmail },
+          update: { roleId: createdRole.id, password: hashedPassword },
+          create: {
+            email: adminEmail,
+            name: "Super Admin",
+            password: hashedPassword,
+            roleId: createdRole.id
+          }
+        });
+        console.log(`Created/Updated production Super Admin: ${adminEmail}`);
       }
-    })
+    } else {
+      // Create a test user for this role
+      const email = `${role.name.toLowerCase().replace(/ /g, '_')}@test.com`
+      await prisma.user.upsert({
+        where: { email },
+        update: { roleId: createdRole.id, password: devPassword }, // Update password just in case
+        create: {
+          email,
+          name: `Test ${role.name}`,
+          password: devPassword,
+          roleId: createdRole.id
+        }
+      });
+    }
   }
 }
 
